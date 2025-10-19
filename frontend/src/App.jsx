@@ -6,6 +6,7 @@ import Report from "./pages/Report";
 import Dashboard from "./pages/Dashboard";
 import Employee from "./pages/Employee";
 import Admin from "./pages/Admin";
+import Login from "./pages/Login"; 
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/login" element={<Login />} /> 
             <Route path="/report" element={<Report />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/employee" element={<Employee />} />
