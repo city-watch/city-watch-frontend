@@ -1,102 +1,142 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-export default function Login() {
-  console.log("🔑 Login mounted"); // 👈 for debugging route change
+const BASE_URL = "http://localhost:8000/api/v1";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
-  const location = useLocation();
+export default function Login()
+{
+    const navigate = useNavigate();
+    const location = useLocation();
+    const params = new URLSearchParams(location.search);
+    const role = params.get("role") || "citizen";
 
-  // detect role from URL, e.g., /login?role=citizen
-  const params = new URLSearchParams(location.search);
-  const role = params.get("role") || "citizen";
+    const [isRegister, setIsRegister] = useState(false);
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    document.title = `Login – ${role === "staff" ? "Staff" : "Citizen"}`;
-  }, [role]);
+    useEffect(() =>
+    {
+        document.title = isRegister
+            ? `Register – ${role}`
+            : `Login – ${role}`;
+    }, [isRegister, role]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError("");
+    const handleSubmit = async (e) =>
+    {
+        e.preventDefault();
+        setError("");
+        setLoading(true);
 
-    if (!email || !password) {
-      setError("Please enter both email and password.");
-      return;
-    }
+        try
+        {
+            const endpoint = isRegister
+                ? `${BASE_URL}/register`
+                : `${BASE_URL}/login`;
 
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password, role }),
-      });
+            const payload = isRegister
+                ? { name, email, password, role: role === "staff" ? "City Employee" : "Citizen" }
+                : { email, password };
 
-      const data = await res.json();
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
 
-      if (res.ok) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("role", data.role || role);
+            const data = await res.json();
 
-        // role-based navigation
-        if (role === "staff") navigate("/employee");
-        else navigate("/dashboard");
-      } else {
-        setError(data.message || "Invalid credentials");
-      }
-    } catch (err) {
-      setError("Network error. Please try again.");
-    }
-  };
+            if (res.ok)
+            {
+                localStorage.setItem("token", data.token);
+                localStorage.setItem("role", data.role || role);
+                localStorage.setItem("name", data.name);
 
-  return (
-    <div
-      className="relative flex items-center justify-center min-h-[calc(100vh-10rem)] bg-cwDark bg-cover bg-center text-cwText"
-      style={{ backgroundImage: "url('/images/nyc-night.jpg')" }}
-    >
-      {/* translucent overlay */}
-      <div className="absolute inset-0 bg-cwDark/80"></div>
+                if (role === "staff") navigate("/employee");
+                else navigate("/dashboard");
+            }
+            else
+            {
+                setError(data.detail || data.message || "Invalid credentials");
+            }
+        }
+        catch (err)
+        {
+            console.error(err);
+            setError("Network error. Try again.");
+        }
+        finally
+        {
+            setLoading(false);
+        }
+    };
 
-      <div className="relative z-10 w-full max-w-sm p-6 rounded-2xl bg-cwDark/90 border border-cwBlue/30 shadow-xl">
-        <h1 className="text-3xl font-bold text-center text-cwBlue mb-6">
-          {role === "staff" ? "Staff Login" : "Citizen Login"}
-        </h1>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg bg-cwDark/70 border border-cwBlue/40 text-cwText placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cwBlue"
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg bg-cwDark/70 border border-cwBlue/40 text-cwText placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cwBlue"
-          />
-
-          {error && <p className="text-sm text-red-400 text-center">{error}</p>}
-
-          <button
-            type="submit"
-            className="w-full bg-cwBlue hover:bg-cwLight text-white font-semibold py-2 rounded-lg transition"
-          >
-            Sign In
-          </button>
-        </form>
-
-        <button
-          onClick={() => navigate("/dashboard")}
-          className="w-full mt-3 text-sm text-gray-300 hover:text-cwLight transition"
+    return (
+        <div
+            className="relative flex items-center justify-center min-h-[calc(100vh-10rem)] bg-cwDark bg-cover bg-center text-cwText"
+            style={{ backgroundImage: "url('/images/nyc-night.jpg')" }}
         >
-          Continue as Visitor
-        </button>
-      </div>
-    </div>
-  );
+            <div className="absolute inset-0 bg-cwDark/80"></div>
+
+            <div className="relative z-10 w-full max-w-sm p-6 rounded-2xl bg-cwDark/90 border border-cwBlue/30 shadow-xl">
+                <h1 className="text-3xl font-bold text-center text-cwBlue mb-6">
+                    {isRegister
+                        ? role === "staff" ? "Staff Registration" : "Citizen Registration"
+                        : role === "staff" ? "Staff Login" : "Citizen Login"}
+                </h1>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {isRegister && (
+                        <input
+                            type="text"
+                            placeholder="Full Name"
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full px-4 py-2 rounded-lg bg-cwDark/70 border border-cwBlue/40 text-cwText placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cwBlue"
+                            required
+                        />
+                    )}
+
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-cwDark/70 border border-cwBlue/40 text-cwText placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cwBlue"
+                        required
+                    />
+                    <input
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full px-4 py-2 rounded-lg bg-cwDark/70 border border-cwBlue/40 text-cwText placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-cwBlue"
+                        required
+                    />
+
+                    {error && <p className="text-sm text-red-400 text-center">{error}</p>}
+
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-cwBlue hover:bg-cwLight text-white font-semibold py-2 rounded-lg transition disabled:opacity-50"
+                    >
+                        {loading ? "Processing..." : isRegister ? "Register" : "Login"}
+                    </button>
+                </form>
+
+                <p className="text-sm text-gray-400 mt-4 text-center">
+                    {isRegister ? "Already have an account?" : "Don’t have an account?"}{" "}
+                    <button
+                        onClick={() => setIsRegister(!isRegister)}
+                        className="text-cwBlue hover:text-cwLight font-medium"
+                    >
+                        {isRegister ? "Login" : "Register"}
+                    </button>
+                </p>
+            </div>
+        </div>
+    );
 }
