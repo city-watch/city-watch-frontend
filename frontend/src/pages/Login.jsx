@@ -54,8 +54,8 @@ export default function Login()
                 localStorage.setItem("role", data.role || role);
                 localStorage.setItem("name", data.name);
 
-                if (role === "staff") navigate("/employee");
-                else navigate("/dashboard");
+                // ✅ Redirect user to the Report page after successful login
+                navigate("/report");
             }
             else
             {
