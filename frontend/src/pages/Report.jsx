@@ -1,32 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
 
 const BASE_URL = "http://localhost:8000/api/v1";
 
-// --- Leaflet Marker Fix ---
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-});
-
-function LocationMarker({ setPosition })
-{
-    useMapEvents({
-        click(e)
-        {
-            setPosition(e.latlng);
-        },
-    });
-    return null;
-}
-
-export default function Report()
-{
+export default function Report() {
     const [position, setPosition] = useState(null);
     const [description, setDescription] = useState("");
     const [photo, setPhoto] = useState(null);
@@ -34,34 +11,50 @@ export default function Report()
     const [error, setError] = useState("");
     const navigate = useNavigate();
 
-    useEffect(() =>
-    {
+    // --- Get user token ---
+    useEffect(() => {
         const token = localStorage.getItem("token");
-        if (!token)
-        {
+        if (!token) {
             navigate("/login?role=citizen");
         }
     }, [navigate]);
 
-    const handleSubmit = async (e) =>
-    {
+    // --- Get user's current location ---
+    useEffect(() => {
+        if (!navigator.geolocation) {
+            setError("Geolocation is not supported by your browser.");
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setPosition({
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                });
+            },
+            (err) => {
+                console.error(err);
+                setError("Unable to retrieve your location. Please enable location access.");
+            }
+        );
+    }, []);
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
         const token = localStorage.getItem("token");
-        if (!token)
-        {
+        if (!token) {
             navigate("/login?role=citizen");
             return;
         }
 
-        if (!position || !description.trim() || !photo)
-        {
-            setError("Please select a location, enter a description, and upload an image.");
+        if (!position || !description.trim() || !photo) {
+            setError("Please ensure location access, description, and image are provided.");
             return;
         }
 
-        try
-        {
+        try {
             const formData = new FormData();
             formData.append("description", description);
             formData.append("latitude", position.lat);
@@ -71,21 +64,16 @@ export default function Report()
             const res = await fetch(`${BASE_URL}/issues`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
-                body: formData
+                body: formData,
             });
 
-            if (res.ok)
-            {
+            if (res.ok) {
                 setSubmitted(true);
-            }
-            else
-            {
+            } else {
                 const data = await res.json();
                 setError(data.detail || data.message || "Failed to submit issue.");
             }
-        }
-        catch (err)
-        {
+        } catch (err) {
             console.error(err);
             setError("Network error. Please try again.");
         }
@@ -106,31 +94,18 @@ export default function Report()
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="relative h-80 rounded-xl overflow-hidden border border-cwBlue/30 shadow-md">
-                            <MapContainer
-                                center={[40.7128, -74.006]}
-                                zoom={13}
-                                style={{ height: "100%", width: "100%" }}
-                                className="rounded-xl"
-                            >
-                                <TileLayer
-                                    attribution='&copy; OpenStreetMap contributors'
-                                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                                />
-                                <LocationMarker setPosition={setPosition} />
-                                {position && <Marker position={position}></Marker>}
-                            </MapContainer>
-                            <div className="pointer-events-none absolute inset-0 rounded-xl border border-cwBlue/40 shadow-[0_0_25px_rgba(59,130,246,0.15)]"></div>
-                        </div>
-
-                        {position && (
+                        {position ? (
                             <div className="bg-cwLight/20 border border-cwBlue/20 text-gray-300 text-sm p-3 rounded-lg text-center">
                                 <p>
-                                    Selected Location:{" "}
+                                    Location detected:{" "}
                                     <span className="text-cwAccent">
                                         Lat: {position.lat.toFixed(5)}, Lng: {position.lng.toFixed(5)}
                                     </span>
                                 </p>
+                            </div>
+                        ) : (
+                            <div className="text-center text-gray-400 text-sm">
+                                Detecting your location...
                             </div>
                         )}
 
