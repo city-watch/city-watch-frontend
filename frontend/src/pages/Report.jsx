@@ -9,15 +9,26 @@ export default function Report() {
     const [photo, setPhoto] = useState(null);
     const [submitted, setSubmitted] = useState(false);
     const [error, setError] = useState("");
+
     const navigate = useNavigate();
 
-    // --- Get user token ---
+    // --- EXACT SAME AUTH CHECK AS ADMIN PAGE ---
     useEffect(() => {
         const token = localStorage.getItem("token");
         if (!token) {
             navigate("/login?role=citizen");
         }
     }, [navigate]);
+
+    // If no token, don't render the page UI (prevents flicker)
+    const token = localStorage.getItem("token");
+    if (!token) {
+        return (
+            <div className="min-h-screen bg-cwDark text-cwText flex justify-center items-center">
+                <p>Redirecting...</p>
+            </div>
+        );
+    }
 
     // --- Get user's current location ---
     useEffect(() => {
@@ -43,6 +54,7 @@ export default function Report() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError("");
+
         const token = localStorage.getItem("token");
         if (!token) {
             navigate("/login?role=citizen");
