@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ----------  GLOBAL DARK THEME  ---------- */
+body {
+  @apply bg-cwDark text-cwText font-sans;
+}
+
+/* subtle glow hover for links & buttons */
+a:hover,
+button:hover {
+  filter: drop-shadow(0 0 6px rgba(59, 130, 246, 0.4));
+}
