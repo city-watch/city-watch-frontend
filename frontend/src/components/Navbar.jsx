@@ -15,7 +15,6 @@ export default function Navbar() {
           <Link to="/" className={linkStyle("/")}>Home</Link>
           <Link to="/report" className={linkStyle("/report")}>Report</Link>
           <Link to="/dashboard" className={linkStyle("/dashboard")}>Dashboard</Link>
-          <Link to="/employee" className={linkStyle("/employee")}>Employee</Link>
           <Link to="/admin" className={linkStyle("/admin")}>Admin</Link>
         </div>
       </div>
