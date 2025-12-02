@@ -1,18 +1,16 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
-export default function Home()
-{
+export default function Home() {
     const [open, setOpen] = useState(false);
     const menuRef = useRef(null);
     const navigate = useNavigate();
 
-    useEffect(() =>
-    {
-        const handleClickOutside = (e) =>
-        {
-            if (menuRef.current && !menuRef.current.contains(e.target))
-            {
+    const token = localStorage.getItem("token");
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (menuRef.current && !menuRef.current.contains(e.target)) {
                 setOpen(false);
             }
         };
@@ -20,13 +18,16 @@ export default function Home()
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleSelect = (role) =>
-    {
+    const handleSelect = (role) => {
         setOpen(false);
-        setTimeout(() =>
-        {
+        setTimeout(() => {
             navigate(`/login?role=${role}`);
         }, 0);
+    };
+
+    const handleLogout = () => {
+        localStorage.clear();
+        window.location.href = "/login";
     };
 
     return (
@@ -35,6 +36,18 @@ export default function Home()
             style={{ backgroundImage: "url('/images/nyc-night.jpg')" }}
         >
             <div className="absolute inset-0 bg-cwDark/80 pointer-events-none"></div>
+
+            {/* LOGOUT BUTTON (only shown if logged in) */}
+            {token && (
+                <div className="absolute top-6 right-6 z-20">
+                    <button
+                        onClick={handleLogout}
+                        className="bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg shadow font-semibold"
+                    >
+                        Logout
+                    </button>
+                </div>
+            )}
 
             <div className="relative z-10 max-w-2xl">
                 <h2 className="text-5xl font-extrabold text-cwText mb-6 tracking-tight drop-shadow-lg">
@@ -46,6 +59,7 @@ export default function Home()
                     City Watch empowers communities to act together.
                 </p>
 
+                {/* LOGIN / REGISTER DROPDOWN */}
                 <div className="relative inline-block" ref={menuRef}>
                     <button
                         type="button"
