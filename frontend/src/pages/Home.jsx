@@ -76,14 +76,14 @@ export default function Home() {
                                 onClick={() => handleSelect("citizen")}
                                 className="block w-full text-left px-4 py-2 hover:bg-cwBlue/30 rounded-t-lg"
                             >
-                                👤 Citizen
+                                 Citizen
                             </button>
                             <button
                                 type="button"
                                 onClick={() => handleSelect("staff")}
                                 className="block w-full text-left px-4 py-2 hover:bg-cwBlue/30 rounded-b-lg"
                             >
-                                🧑‍💼 Staff
+                                 Staff
                             </button>
                         </div>
                     )}

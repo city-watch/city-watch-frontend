@@ -108,28 +108,28 @@ export default function Dashboard() {
                             onClick={() => navigate("/report")}
                             className="bg-cwBlue hover:bg-cwLight text-white font-semibold py-3 rounded-xl"
                         >
-                            ➕ Report an Issue
+                             Report an Issue
                         </button>
 
                         <button
                             onClick={() => navigate("/map")}
                             className="bg-cwDark/40 hover:bg-cwLight/20 text-cwText border border-cwBlue/40 py-3 rounded-xl"
                         >
-                            🗺 View Map
+                             View Map
                         </button>
 
                         <button
                             onClick={() => navigate("/leaderboard")}
                             className="bg-cwDark/40 hover:bg-cwLight/20 text-cwText border border-cwBlue/40 py-3 rounded-xl"
                         >
-                            🏆 Leaderboard
+                             Leaderboard
                         </button>
 
                         <button
                             onClick={() => navigate("/profile")}
                             className="bg-cwDark/40 hover:bg-cwLight/20 text-cwText border border-cwBlue/40 py-3 rounded-xl"
                         >
-                            👤 Profile
+                             Profile
                         </button>
                     </div>
                 </div>
