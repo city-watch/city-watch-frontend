@@ -1,8 +1,30 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import "leaflet.heat";
 
 const REPORT_URL = "http://localhost:8000/api/v1";
-const USER_URL = "http://localhost:8002/api/v1";
+
+function HeatmapLayer({ points }) {
+    const map = useMap();
+
+    useEffect(() => {
+        if (!points || points.length === 0) return;
+
+        const heat = L.heatLayer(points, {
+            radius: 30,
+            blur: 20,
+        }).addTo(map);
+
+        return () => {
+            map.removeLayer(heat);
+        };
+    }, [points]);
+
+    return null;
+}
 
 export default function Admin() {
     const navigate = useNavigate();
@@ -13,7 +35,6 @@ export default function Admin() {
     const [error, setError] = useState("");
     const [modalIssue, setModalIssue] = useState(null);
 
-    // Filters
     const [statusFilter, setStatusFilter] = useState("");
     const [priorityFilter, setPriorityFilter] = useState("");
     const [categoryFilter, setCategoryFilter] = useState("");
@@ -23,11 +44,7 @@ export default function Admin() {
         const token = localStorage.getItem("token");
         const role = localStorage.getItem("role");
 
-        if (!token) {
-            navigate("/login?role=staff");
-            return;
-        }
-        if (role !== "City Employee") {
+        if (!token || role !== "City Employee") {
             navigate("/login?role=staff");
             return;
         }
@@ -37,35 +54,21 @@ export default function Admin() {
     useEffect(() => {
         const token = localStorage.getItem("token");
 
-        const loadIssues = async () => {
-            try {
-                setLoading(true);
-
-                const res = await fetch(`${REPORT_URL}/issues`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
-
-                if (!res.ok) throw new Error("Failed to load issues");
-
-                const data = await res.json();
+        fetch(`${REPORT_URL}/issues`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.json())
+            .then(data => {
                 setIssues(data.issues || []);
                 setFiltered(data.issues || []);
-
-            } catch (err) {
-                console.error(err);
-                setError("Failed to load issues.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        loadIssues();
+            })
+            .catch(() => setError("Failed to load issues."))
+            .finally(() => setLoading(false));
     }, []);
 
-    // -------- DYNAMIC CATEGORIES --------
     const dynamicCategories = [...new Set(issues.map(i => i.category))];
 
-    // -------- APPLY FILTERS --------
+    // -------- FILTERING --------
     useEffect(() => {
         let out = [...issues];
 
@@ -76,70 +79,81 @@ export default function Admin() {
         setFiltered(out);
     }, [statusFilter, priorityFilter, categoryFilter, issues]);
 
-    const openModal = issue => setModalIssue(issue);
-    const closeModal = () => setModalIssue(null);
-
     // -------- UPDATE STATUS --------
-    const updateStatus = async (id, newStatus) => {
+    const updateStatus = async (id, status) => {
         const token = localStorage.getItem("token");
 
-        try {
-            const res = await fetch(`${REPORT_URL}/issues/${id}/status`, {
-                method: "PUT",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ status: newStatus })
-            });
+        const res = await fetch(`${REPORT_URL}/issues/${id}/status`, {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ status }),
+        });
 
-            if (!res.ok) {
-                const data = await res.json();
-                setError(data.detail || "Failed to update status.");
-                return;
-            }
-
-            // Update UI immediately
-            setIssues(prev =>
-                prev.map(i =>
-                    i.issue_id === id ? { ...i, status: newStatus } : i
-                )
-            );
-
-        } catch (err) {
-            console.error(err);
-            setError("Network error.");
+        if (!res.ok) {
+            const data = await res.json();
+            setError(data.detail || "Failed to update.");
+            return;
         }
+
+        setIssues(prev =>
+            prev.map(i =>
+                i.issue_id === id ? { ...i, status } : i
+            )
+        );
     };
 
     const priorityColor = (p) => {
-        switch (p) {
-            case "high": return "text-red-400";
-            case "medium": return "text-yellow-300";
-            case "low": return "text-green-400";
-            default: return "text-gray-300";
-        }
+        if (p === "high") return "text-red-400";
+        if (p === "medium") return "text-yellow-300";
+        return "text-green-400";
     };
 
-    // -------- LOADING STATE --------
     if (loading) {
         return (
-            <div className="min-h-screen bg-cwDark text-cwText flex justify-center items-center">
+            <div className="min-h-screen bg-cwDark text-cwText flex items-center justify-center">
                 Loading issues...
             </div>
         );
     }
 
-    return (
-        <div className="min-h-screen bg-cwDark text-cwText px-6 py-10">
-            <h1 className="text-4xl font-bold text-cwBlue mb-6">City Employee Dashboard</h1>
+    const heatPoints = issues.map(i => [i.latitude, i.longitude, 0.5]);
 
-            {error && <p className="text-red-400 mb-4">{error}</p>}
+    return (
+        <div className="min-h-screen bg-cwDark text-cwText px-6 py-6">
+
+            {/* PAGE TITLE */}
+            <h1 className="text-4xl font-bold text-cwBlue mb-6">
+                City Employee Dashboard
+            </h1>
+
+            {/* MAP */}
+            <MapContainer
+                center={[40.7128, -74.0060]}
+                zoom={12}
+                style={{ height: "45vh", borderRadius: "12px", marginBottom: "2rem", zIndex: 1 }}
+            >
+                <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <HeatmapLayer points={heatPoints} />
+
+                {issues.map(issue => (
+                    <Marker key={issue.issue_id} position={[issue.latitude, issue.longitude]}>
+                        <Popup>
+                            <b>{issue.title}</b><br />
+                            {issue.category}<br />
+                            Status: {issue.status}
+                        </Popup>
+                    </Marker>
+                ))}
+            </MapContainer>
 
             {/* FILTERS */}
             <div className="grid md:grid-cols-3 gap-4 mb-6">
 
-                {/* STATUS FILTER */}
                 <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
@@ -151,7 +165,6 @@ export default function Admin() {
                     <option value="resolved">Resolved</option>
                 </select>
 
-                {/* PRIORITY FILTER */}
                 <select
                     value={priorityFilter}
                     onChange={(e) => setPriorityFilter(e.target.value)}
@@ -163,21 +176,19 @@ export default function Admin() {
                     <option value="low">Low</option>
                 </select>
 
-                {/* CATEGORY FILTER (DYNAMIC) */}
                 <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
                     className="bg-cwMedium border border-cwBlue/40 p-3 rounded-lg"
                 >
                     <option value="">Filter by Category</option>
-                    {dynamicCategories.map((c) => (
+                    {dynamicCategories.map(c => (
                         <option key={c} value={c}>{c}</option>
                     ))}
                 </select>
-
             </div>
 
-            {/* TABLE */}
+            {/* ISSUE TABLE */}
             <div className="overflow-x-auto border border-cwBlue/30 rounded-xl">
                 <table className="w-full">
                     <thead className="bg-cwMedium/50 text-left">
@@ -189,8 +200,9 @@ export default function Admin() {
                             <th className="p-3">Actions</th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        {filtered.map((issue) => (
+                        {filtered.map(issue => (
                             <tr key={issue.issue_id} className="border-b border-cwBlue/20">
                                 <td className="p-3">{issue.title}</td>
 
@@ -203,7 +215,7 @@ export default function Admin() {
 
                                 <td className="p-3">
                                     <button
-                                        onClick={() => openModal(issue)}
+                                        onClick={() => setModalIssue(issue)}
                                         className="text-cwBlue hover:text-cwLight mr-4"
                                     >
                                         View
@@ -211,7 +223,9 @@ export default function Admin() {
 
                                     <select
                                         value={issue.status}
-                                        onChange={(e) => updateStatus(issue.issue_id, e.target.value)}
+                                        onChange={(e) =>
+                                            updateStatus(issue.issue_id, e.target.value)
+                                        }
                                         className="bg-cwDark border border-cwBlue/40 p-2 rounded-lg"
                                     >
                                         <option value="open">Open</option>
@@ -227,12 +241,20 @@ export default function Admin() {
 
             {/* MODAL */}
             {modalIssue && (
-                <div className="fixed inset-0 bg-black/70 flex justify-center items-center p-4">
-                    <div className="bg-cwMedium p-6 rounded-xl border border-cwBlue/40 max-w-lg w-full relative">
-
+                <div
+                    className="fixed inset-0 bg-black/70 flex justify-center items-center p-4"
+                    style={{ zIndex: 9999 }}
+                >
+                    <div
+                        className="p-6 rounded-xl border border-cwBlue/40 max-w-2xl w-full relative"
+                        style={{
+                            backgroundColor: "#0f172a",
+                            zIndex: 10000,
+                        }}
+                    >
                         <button
                             className="absolute top-2 right-3 text-gray-300 hover:text-white text-xl"
-                            onClick={closeModal}
+                            onClick={() => setModalIssue(null)}
                         >
                             ×
                         </button>
@@ -249,18 +271,18 @@ export default function Admin() {
                             />
                         )}
 
-                        <p className="text-gray-300 mb-2">{modalIssue.description}</p>
-                        <p className="text-sm text-gray-400 mb-1">
+                        <p className="text-gray-300">{modalIssue.description}</p>
+
+                        <p className="text-sm text-gray-400 mt-3">
                             <strong>Location:</strong> {modalIssue.latitude}, {modalIssue.longitude}
                         </p>
-                        <p className="text-sm text-gray-400 mb-1">
+
+                        <p className="text-sm text-gray-400">
                             <strong>Category:</strong> {modalIssue.category}
                         </p>
-                        <p className="text-sm text-gray-400 mb-4">
-                            <strong>Priority:</strong>{" "}
-                            <span className={priorityColor(modalIssue.priority)}>
-                                {modalIssue.priority}
-                            </span>
+
+                        <p className="text-sm text-gray-400 mb-2">
+                            <strong>Priority:</strong> {modalIssue.priority}
                         </p>
 
                         <button
@@ -269,11 +291,9 @@ export default function Admin() {
                         >
                             View Full Details →
                         </button>
-
                     </div>
                 </div>
             )}
-
         </div>
     );
 }
