@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
-const REPORT_URL = "http://localhost:8000/api/v1";
+const REPORT_URL = "http://localhost:3000/api/v1/issues";
 
 export default function IssueDetail() {
     const { id } = useParams();
@@ -15,9 +15,23 @@ export default function IssueDetail() {
 
     useEffect(() => {
         const headers = { Authorization: `Bearer ${token}` };
-        fetch(`${REPORT_URL}/issues/${id}`, { headers })
-            .then((res) => res.json())
-            .then((data) => setIssue(data))
+
+        fetch(`${REPORT_URL}/${id}`, { headers })
+            .then(async (res) => {
+                if (!res.ok) throw new Error("Failed to load issue");
+                return res.json();
+            })
+            .then((data) => {
+                // Ensure comments array exists
+                setIssue({
+                    ...data,
+                    comments: data.comments ?? []
+                });
+            })
+            .catch((err) => {
+                console.error("Issue load error:", err);
+                setIssue(null);
+            })
             .finally(() => setLoading(false));
     }, [id, token]);
 
@@ -25,8 +39,9 @@ export default function IssueDetail() {
         if (!commentText.trim()) return;
 
         setSubmitting(true);
+
         try {
-            const res = await fetch(`${REPORT_URL}/issues/${id}/comments`, {
+            const res = await fetch(`${REPORT_URL}/${id}/comments`, {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`,
@@ -35,26 +50,36 @@ export default function IssueDetail() {
                 body: JSON.stringify({ text: commentText }),
             });
 
+            if (!res.ok) throw new Error("Comment failed");
+
             const newComment = await res.json();
 
-            // Add new comment to UI
+            // Add to existing comments safely
             setIssue((prev) => ({
                 ...prev,
-                comments: [...prev.comments, newComment],
+                comments: [...(prev?.comments ?? []), newComment],
             }));
 
             setCommentText("");
         } catch (err) {
-            console.error(err);
+            console.error("Comment submit error:", err);
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (loading || !issue) {
+    if (loading) {
         return (
             <div className="min-h-screen bg-cwDark text-cwText flex justify-center items-center">
                 Loading...
+            </div>
+        );
+    }
+
+    if (!issue) {
+        return (
+            <div className="min-h-screen bg-cwDark text-cwText flex justify-center items-center">
+                Issue not found.
             </div>
         );
     }

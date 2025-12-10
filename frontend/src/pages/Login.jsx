@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 // AUTHENTICATION SERVICE (User Management)
-const USER_URL = "http://localhost:8002/api/v1";
+const USER_URL = "http://localhost:3000/api/v1/users";
 
 export default function Login() {
     const navigate = useNavigate();

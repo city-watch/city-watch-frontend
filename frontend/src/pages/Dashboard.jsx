@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const USER_URL = "http://localhost:8002/api/v1";
-const REPORT_URL = "http://localhost:8000/api/v1";
+const USER_URL = "http://localhost:3000/api/v1/users";
+const REPORT_URL = "http://localhost:3000/api/v1/issues";
 
 export default function Dashboard() {
     const navigate = useNavigate();
@@ -31,12 +31,14 @@ export default function Dashboard() {
                 setLoading(true);
                 const headers = { Authorization: `Bearer ${token}` };
 
+                // Load profile
                 const resProfile = await fetch(`${USER_URL}/profile/me`, { headers });
                 if (!resProfile.ok) throw new Error("Profile failed");
                 const pData = await resProfile.json();
                 setProfile(pData);
 
-                const resIssues = await fetch(`${REPORT_URL}/issues`, { headers });
+                // Load issues
+                const resIssues = await fetch(`${REPORT_URL}`, { headers });
                 const iData = await resIssues.json();
                 setIssues(iData.issues || []);
 
@@ -65,7 +67,6 @@ export default function Dashboard() {
     return (
         <div className="min-h-screen bg-cwDark text-cwText px-6 py-10 flex justify-center">
             <div className="w-full max-w-6xl">
-
                 {/* HEADER */}
                 <h1 className="text-4xl font-bold text-cwBlue mb-2">
                     Welcome, {profile.name}
@@ -76,7 +77,6 @@ export default function Dashboard() {
 
                 {/* TOP CARDS */}
                 <div className="grid md:grid-cols-3 gap-6 mb-10">
-
                     {/* Points */}
                     <div className="bg-cwMedium/90 border border-cwBlue/40 rounded-xl p-6 shadow-lg">
                         <h2 className="text-sm text-gray-400">Your Points</h2>
@@ -136,7 +136,7 @@ export default function Dashboard() {
                     </div>
                 </div>
 
-                {/* OPEN ISSUES LIST */}
+                {/* OPEN ISSUES */}
                 <div className="bg-cwMedium/90 border border-cwBlue/40 rounded-xl p-6 shadow-lg">
                     <h2 className="text-xl font-semibold mb-4">Open Issues in the City</h2>
 

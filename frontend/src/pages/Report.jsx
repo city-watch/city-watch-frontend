@@ -2,10 +2,10 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 // User Management API (for verifying login)
-const USER_URL = "http://localhost:8002/api/v1";
+const USER_URL = "http://localhost:3000/api/v1/users";
 
 // Report Management API (for creating issues)
-const REPORT_URL = "http://localhost:8000/api/v1";
+const REPORT_URL = "http://localhost:3000/api/v1/issues";
 
 export default function Report() {
     const [position, setPosition] = useState(null);
@@ -78,7 +78,7 @@ export default function Report() {
             formData.append("longitude", position.lng);
             formData.append("image", photo);
 
-            const res = await fetch(`${REPORT_URL}/issues`, {
+            const res = await fetch(`${REPORT_URL}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData,

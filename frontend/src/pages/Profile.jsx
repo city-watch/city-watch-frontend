@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const USER_URL = "http://localhost:8002/api/v1";
+const USER_URL = "http://localhost:3000/api/v1/users";
 
 export default function Profile() {
     const [profile, setProfile] = useState(null);

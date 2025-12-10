@@ -4,7 +4,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 
-const REPORT_URL = "http://localhost:8000/api/v1";
+const REPORT_URL = "http://localhost:3000/api/v1/issues";
 
 function HeatmapLayer({ points }) {
     const map = useMap();
@@ -32,7 +32,7 @@ export default function MapPage() {
     useEffect(() => {
         const token = localStorage.getItem("token");
 
-        fetch(`${REPORT_URL}/issues`, {
+        fetch(`${REPORT_URL}`, {
             headers: { Authorization: `Bearer ${token}` },
         })
             .then(res => res.json())

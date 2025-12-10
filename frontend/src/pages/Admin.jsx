@@ -5,7 +5,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet.heat";
 
-const REPORT_URL = "http://localhost:8000/api/v1";
+const REPORT_URL = "http://localhost:3000/api/v1/issues";
 
 function HeatmapLayer({ points }) {
     const map = useMap();
@@ -18,9 +18,7 @@ function HeatmapLayer({ points }) {
             blur: 20,
         }).addTo(map);
 
-        return () => {
-            map.removeLayer(heat);
-        };
+        return () => map.removeLayer(heat);
     }, [points]);
 
     return null;
@@ -54,7 +52,7 @@ export default function Admin() {
     useEffect(() => {
         const token = localStorage.getItem("token");
 
-        fetch(`${REPORT_URL}/issues`, {
+        fetch(`${REPORT_URL}`, {
             headers: { Authorization: `Bearer ${token}` }
         })
             .then(res => res.json())
@@ -83,7 +81,7 @@ export default function Admin() {
     const updateStatus = async (id, status) => {
         const token = localStorage.getItem("token");
 
-        const res = await fetch(`${REPORT_URL}/issues/${id}/status`, {
+        const res = await fetch(`${REPORT_URL}/${id}/status`, {
             method: "PUT",
             headers: {
                 Authorization: `Bearer ${token}`,
@@ -135,9 +133,7 @@ export default function Admin() {
                 zoom={12}
                 style={{ height: "45vh", borderRadius: "12px", marginBottom: "2rem", zIndex: 1 }}
             >
-                <TileLayer
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
+                <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                 <HeatmapLayer points={heatPoints} />
 
                 {issues.map(issue => (
@@ -247,10 +243,7 @@ export default function Admin() {
                 >
                     <div
                         className="p-6 rounded-xl border border-cwBlue/40 max-w-2xl w-full relative"
-                        style={{
-                            backgroundColor: "#0f172a",
-                            zIndex: 10000,
-                        }}
+                        style={{ backgroundColor: "#0f172a", zIndex: 10000 }}
                     >
                         <button
                             className="absolute top-2 right-3 text-gray-300 hover:text-white text-xl"
@@ -285,6 +278,7 @@ export default function Admin() {
                             <strong>Priority:</strong> {modalIssue.priority}
                         </p>
 
+                        {/* 🔥 FIXED ROUTE! */}
                         <button
                             onClick={() => navigate(`/issues/${modalIssue.issue_id}`)}
                             className="bg-cwBlue hover:bg-cwLight text-white px-4 py-2 rounded-lg shadow"
